@@ -8,33 +8,34 @@ pub const CPROPV: Vector3D = Vector3D {
 
 pub fn translate_to_surface(p0: Vector3D, e0: Vector3D, side: &Side, plane: f64) -> Vector3D
 {
-    if side.surf_type == 0
+    match side.surf_type
     {
-        let pprime = translate_to_flat(p0, e0, plane);
-        return pprime;
-    }
-
-    let mut zest1 = calc_sag(p0.x, p0.y, &side, 0.001);
-    let mut u = (zest1 - p0.z) / e0.z;
-    let mut p1 = p0.clone();
-    let mut p2 = p0 + e0 * u;
-
-    for _i in 0..10
-    {
-        if (p1 - p2).length() > 1e-4f64
+        0 => translate_to_flat(p0, e0, plane),
+        _ =>
         {
-            p1 = p2;
-            zest1 = calc_sag(p1.x, p1.y, &side, 0.001) + plane;
-            u = (zest1 - p0.z) / e0.z;
-            p2 = p0 + e0 * u;
-        }
-        else
-        {
-            break;
+            let mut zest1 = calc_sag(p0.x, p0.y, &side, 0.001);
+            let mut u = (zest1 - p0.z) / e0.z;
+            let mut p1 = p0.clone();
+            let mut p2 = p0 + e0 * u;
+
+            for _i in 0..10
+            {
+                if (p1 - p2).length() > 1e-4f64
+                {
+                    p1 = p2;
+                    zest1 = calc_sag(p1.x, p1.y, &side, 0.001) + plane;
+                    u = (zest1 - p0.z) / e0.z;
+                    p2 = p0 + e0 * u;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            p2
         }
     }
-
-    p2
 }
 
 pub fn translate_to_flat(p: Vector3D, e: Vector3D, zplane: f64) -> Vector3D
@@ -73,11 +74,14 @@ pub fn calc_slope(p: Vector3D, s: &Side) -> Vector3D
 
 pub fn calc_sag(x: f64, y: f64, side: &Side, rtolforzero: f64) -> f64
 {
-    let mut c = 0.0;
-    if side.r.abs() > rtolforzero
+    let c = if side.r.abs() > rtolforzero
     {
-        c = 1.0 / side.r;
+        1.0 / side.r
     }
+    else
+    {
+        0.0
+    };
 
     let r2 = x * x + y * y;
     let sqrtvalue = 1.0 - (1.0 + side.k) * c * c * r2;

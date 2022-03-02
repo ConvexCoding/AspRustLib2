@@ -23,7 +23,7 @@ fn gen_wfe_rays(apert: f64, size: usize, din: &mut [WFE_Ray], loopsize: i32)
     let diag = apert * apert * 1.00001f64;
 
     let step = 2f64 * apert / (loopsize - 1i32) as f64;
-    let mut count = 0i32;
+    let mut count = 0usize;
 
     let dirvector = Vector3D {
         x: 0.0f64,
@@ -38,18 +38,18 @@ fn gen_wfe_rays(apert: f64, size: usize, din: &mut [WFE_Ray], loopsize: i32)
         {
             x = -apert + col as f64 * step;
 
-            din[count as usize].rstart.pvector = Vector3D { x: x, y: y, z: 0.0 };
-            din[count as usize].rstart.edir = dirvector;
-            din[count as usize].ix = col;
-            din[count as usize].iy = row;
+            din[count].rstart.pvector = Vector3D { x: x, y: y, z: 0.0 };
+            din[count].rstart.edir = dirvector;
+            din[count].ix = col;
+            din[count].iy = row;
 
             if diag > x * x + y * y
             {
-                din[count as usize].isvalid = 1i32;
+                din[count].isvalid = 1i32;
             }
             else
             {
-                din[count as usize].isvalid = 0i32;
+                din[count].isvalid = 0i32;
             }
             count = count + 1i32;
         }

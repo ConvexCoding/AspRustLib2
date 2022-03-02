@@ -100,7 +100,7 @@ pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
 extern "C" fn gen_and_trace_wfe_rays(
     ptr: *mut WFE_Ray,
     npts: usize,
-    loopsize: i32,
+    loopsize: usize,
     lens: Lens,
     refocus: f64,
 ) -> WFE_Stats
@@ -146,14 +146,14 @@ extern "C" fn gen_and_trace_wfe_rays(
     wstats
 }
 
-fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: i32)
+fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: usize)
 {
     let mut x: f64;
     let mut y: f64;
     let diag = apert * apert;
 
-    let step = 2f64 * apert / (loopsize - 1i32) as f64;
-    let mut count = 0i32;
+    let step = 2f64 * apert / (loopsize - 1) as f64;
+    let mut count = 0usize;
 
     //let dirvector = Vector3D{x: 0.0f64, y: 0.0f64, z: 1.0f64};
 
@@ -164,20 +164,20 @@ fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: i32)
         {
             x = -apert + col as f64 * step;
 
-            din[count as usize].rstart.pvector = Vector3D { x: x, y: y, z: 0.0 };
-            din[count as usize].rstart.edir = CPROPV;
-            din[count as usize].ix = col;
-            din[count as usize].iy = row;
+            din[count].rstart.pvector = Vector3D { x: x, y: y, z: 0.0 };
+            din[count].rstart.edir = CPROPV;
+            din[count].ix = col as i32;
+            din[count].iy = row as i32;
 
             if diag > x * x + y * y
             {
-                din[count as usize].isvalid = 1i32;
+                din[count].isvalid = 1i32;
             }
             else
             {
-                din[count as usize].isvalid = 0i32;
+                din[count].isvalid = 0i32;
             }
-            count = count + 1i32;
+            count = count + 1
         }
     }
 }
