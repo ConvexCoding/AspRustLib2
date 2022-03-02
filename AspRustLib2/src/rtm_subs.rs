@@ -1,10 +1,4 @@
-use crate::{Ray, Side, Vector3D};
-
-pub const CPROPV: Vector3D = Vector3D {
-    x: 0.0,
-    y: 0.0,
-    z: 1.0,
-};
+use crate::{Side, Vector3D};
 
 pub fn translate_to_surface(p0: &Vector3D, e0: &Vector3D, side: &Side, plane: f64) -> Vector3D
 {
@@ -42,15 +36,6 @@ pub fn translate_to_flat(p: &Vector3D, e: &Vector3D, zplane: f64) -> Vector3D
 {
     let u = (zplane - p.z) / e.z;
     p + &(e * u)
-}
-
-pub fn calc_aoi_lsa(ray: &Ray) -> (f64, f64)
-{
-    //Vector3D{x: 0f64, y: 0f64, z: 1f64}
-    let aoi = ray.edir.dot_product(&CPROPV).acos();
-    let lsa =
-        -1.0 * (ray.pvector.x * ray.pvector.x + ray.pvector.y * ray.pvector.y).sqrt() / aoi.tan();
-    (aoi, lsa)
 }
 
 pub fn calc_slope(p: &Vector3D, s: &Side) -> Vector3D

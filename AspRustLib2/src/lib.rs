@@ -6,12 +6,10 @@ use rand::Rng;
 use crate::lens_struct::{Lens, Side};
 mod lens_struct;
 
-use crate::ray_vector::{Ray, Vector3D, WFE_Ray, WFE_Stats};
+use crate::ray_vector::{Ray, Vector3D, WFE_Ray, WFE_Stats, CPROPV};
 mod ray_vector;
 
-use crate::rtm_subs::{
-    calc_aoi_lsa, calc_dir_sines, calc_slope, translate_to_flat, translate_to_surface,
-};
+use crate::rtm_subs::{calc_dir_sines, calc_slope, translate_to_flat, translate_to_surface};
 mod rtm_subs;
 
 //extern crate regex;
@@ -32,12 +30,6 @@ pub struct OpdResults
     pub opd: f64,
     pub lsa: f64,
 }
-
-pub const CPROPV: Vector3D = Vector3D {
-    x: 0.0,
-    y: 0.0,
-    z: 1.0,
-};
 
 //
 // ===================================================================================
@@ -67,11 +59,11 @@ pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
 
     let rm = trace_ray(&p0, &e0, lens, 0.0);
     //let ym = rm.pvector;
-    let (ymaoi, ymlsa) = calc_aoi_lsa(&rm);
+    let (ymaoi, ymlsa) = rm.calc_aoi_lsa();
 
     let rz = trace_ray(&p1, &e0, lens, 0.0);
     //let yz = rz.pvector;
-    let (_yzaoi, yzlsa) = calc_aoi_lsa(&rz);
+    let (_yzaoi, yzlsa) = rz.calc_aoi_lsa();
 
     //let rfinal = trace_ray(p0, e0, lens, refocus);
     //let yfinal = rfinal.pvector;
@@ -210,15 +202,15 @@ fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 
     let rm = trace_ray(&p0, &e0, lens, 0.0);
     //let ym = rm.pvector;
-    let (ymaoi, ymlsa) = calc_aoi_lsa(&rm);
+    let (ymaoi, ymlsa) = rm.calc_aoi_lsa();
 
     let rz = trace_ray(&p1, &e0, lens, 0.0);
     //let yz = rz.pvector;
-    let (_yzaoi, yzlsa) = calc_aoi_lsa(&rz);
+    let (_yzaoi, yzlsa) = rz.calc_aoi_lsa();
 
     let rfinal = trace_ray(&p0, &e0, lens, refocus);
     //let yfinal = rfinal.pvector;
-    let (_yfaoi, yflsa) = calc_aoi_lsa(&rfinal);
+    let (_yfaoi, yflsa) = rfinal.calc_aoi_lsa();
     wferay.rend = rfinal;
     wferay.lsa = yflsa;
 

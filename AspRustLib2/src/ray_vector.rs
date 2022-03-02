@@ -1,11 +1,27 @@
 use std::ops;
 
+pub const CPROPV: Vector3D = Vector3D {
+    x: 0.0,
+    y: 0.0,
+    z: 1.0,
+};
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Ray
 {
     pub pvector: Vector3D,
     pub edir: Vector3D,
+}
+
+impl Ray
+{
+    pub fn calc_aoi_lsa(&self) -> (f64, f64)
+    {
+        let aoi = self.edir.dot_product(&CPROPV).acos();
+        let lsa = -1.0 * (self.pvector.x.powi(2) + self.pvector.y.powi(2)).sqrt() / aoi.tan();
+        (aoi, lsa)
+    }
 }
 
 #[derive(Clone)]
