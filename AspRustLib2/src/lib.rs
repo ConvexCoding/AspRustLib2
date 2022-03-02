@@ -3,7 +3,7 @@ use rand::Rng;
 use crate::lens_struct::{Lens, Side};
 mod lens_struct;
 
-use crate::ray_vector::{dot_product, Ray, Vector3D, WFE_Ray, WFE_Stats};
+use crate::ray_vector::{Ray, Vector3D, WFE_Ray, WFE_Stats};
 mod ray_vector;
 
 use crate::rtm_subs::{

@@ -50,6 +50,11 @@ impl Vector3D
     {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
+
+    pub fn dot_product(self, other: Vector3D) -> f64
+    {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
 }
 
 impl Add for Vector3D
@@ -115,9 +120,4 @@ impl Div<f64> for Vector3D
             z: self.z / other,
         }
     }
-}
-
-pub fn dot_product(v1: Vector3D, v2: Vector3D) -> f64
-{
-    v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }

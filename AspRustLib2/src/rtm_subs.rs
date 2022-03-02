@@ -1,4 +1,4 @@
-use crate::{dot_product, Ray, Side, Vector3D};
+use crate::{Ray, Side, Vector3D};
 
 pub const CPROPV: Vector3D = Vector3D {
     x: 0f64,
@@ -46,7 +46,7 @@ pub fn translate_to_flat(p: Vector3D, e: Vector3D, zplane: f64) -> Vector3D
 pub fn calc_aoi_lsa(ray: Ray) -> (f64, f64)
 {
     //Vector3D{x: 0f64, y: 0f64, z: 1f64}
-    let aoi = dot_product(ray.edir, CPROPV).acos();
+    let aoi = ray.edir.dot_product(CPROPV).acos();
     let lsa = -1.0f64 * (ray.pvector.x * ray.pvector.x + ray.pvector.y * ray.pvector.y).sqrt()
         / aoi.tan();
     (aoi, lsa)
@@ -94,7 +94,7 @@ pub fn calc_sag(x: f64, y: f64, side: &Side, rtolforzero: f64) -> f64
 
 pub fn calc_dir_sines(ein: Vector3D, ndir: Vector3D, nin: f64, nout: f64) -> Vector3D
 {
-    let alpha = dot_product(ein, ndir);
+    let alpha = ein.dot_product(ndir);
     let a = 1.0;
     let b = 2.0 * alpha;
     let c = 1.0 - (nout * nout) / (nin * nin);
