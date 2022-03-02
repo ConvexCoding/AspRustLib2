@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul, Sub};
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Vector3D
 {
     pub x: f64,
@@ -9,7 +9,7 @@ pub struct Vector3D
     pub z: f64,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Ray
 {
@@ -17,7 +17,7 @@ pub struct Ray
     pub edir: Vector3D,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct WFE_Ray
 {
@@ -60,7 +60,7 @@ impl Vector3D
 impl Add for Vector3D
 {
     type Output = Self;
-    fn add(self, other: Self) -> Self
+    fn add(self, other: Self) -> Self::Output
     {
         Self {
             x: self.x + other.x,
@@ -73,7 +73,7 @@ impl Add for Vector3D
 impl Sub for Vector3D
 {
     type Output = Self;
-    fn sub(self, other: Self) -> Self
+    fn sub(self, other: Self) -> Self::Output
     {
         Self {
             x: self.x - other.x,
@@ -86,7 +86,7 @@ impl Sub for Vector3D
 impl Mul<f64> for Vector3D
 {
     type Output = Self;
-    fn mul(self, other: f64) -> Self
+    fn mul(self, other: f64) -> Self::Output
     {
         Self {
             x: self.x * other,
@@ -99,7 +99,7 @@ impl Mul<f64> for Vector3D
 impl Mul<Vector3D> for Vector3D
 {
     type Output = Self;
-    fn mul(self, other: Self) -> Self
+    fn mul(self, other: Self) -> Self::Output
     {
         Self {
             x: self.x * other.x,
@@ -112,7 +112,7 @@ impl Mul<Vector3D> for Vector3D
 impl Div<f64> for Vector3D
 {
     type Output = Self;
-    fn div(self, other: f64) -> Self
+    fn div(self, other: f64) -> Self::Output
     {
         Self {
             x: self.x / other,
