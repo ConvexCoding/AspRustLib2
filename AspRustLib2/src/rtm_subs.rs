@@ -18,7 +18,7 @@ pub fn translate_to_surface(p0: Vector3D, e0: Vector3D, side: &Side, plane: f64)
             let mut p1 = p0.clone();
             let mut p2 = p0 + e0 * u;
 
-            for _i in 0..10
+            for _ in 0..10
             {
                 if (p1 - p2).length() > 1e-4f64
                 {

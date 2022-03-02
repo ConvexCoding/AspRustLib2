@@ -306,7 +306,7 @@ pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
 
     let mut rng = rand::thread_rng();
 
-    for _i in 0..gr.baserays
+    for _ in 0..gr.baserays
     {
         x = rng.gen_range(-gr.half_ap, gr.half_ap);
         y = rng.gen_range(-gr.half_ap, gr.half_ap);
