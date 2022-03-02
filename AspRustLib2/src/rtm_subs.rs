@@ -1,9 +1,9 @@
 use crate::{Ray, Side, Vector3D};
 
 pub const CPROPV: Vector3D = Vector3D {
-    x: 0f64,
-    y: 0f64,
-    z: 1.0f64,
+    x: 0.0,
+    y: 0.0,
+    z: 1.0,
 };
 
 pub fn translate_to_surface(p0: Vector3D, e0: Vector3D, side: &Side, plane: f64) -> Vector3D
@@ -20,7 +20,7 @@ pub fn translate_to_surface(p0: Vector3D, e0: Vector3D, side: &Side, plane: f64)
 
             for _ in 0..10
             {
-                if (p1 - p2).length() > 1e-4f64
+                if (p1 - p2).length() > 1e-4
                 {
                     p1 = p2;
                     zest1 = calc_sag(p1.x, p1.y, &side, 0.001) + plane;
@@ -48,8 +48,8 @@ pub fn calc_aoi_lsa(ray: Ray) -> (f64, f64)
 {
     //Vector3D{x: 0f64, y: 0f64, z: 1f64}
     let aoi = ray.edir.dot_product(CPROPV).acos();
-    let lsa = -1.0f64 * (ray.pvector.x * ray.pvector.x + ray.pvector.y * ray.pvector.y).sqrt()
-        / aoi.tan();
+    let lsa =
+        -1.0 * (ray.pvector.x * ray.pvector.x + ray.pvector.y * ray.pvector.y).sqrt() / aoi.tan();
     (aoi, lsa)
 }
 

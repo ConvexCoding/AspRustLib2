@@ -31,9 +31,9 @@ pub struct OpdResults
 }
 
 pub const CPROPV: Vector3D = Vector3D {
-    x: 0f64,
-    y: 0f64,
-    z: 1.0f64,
+    x: 0.0,
+    y: 0.0,
+    z: 1.0,
 };
 
 //
@@ -52,21 +52,21 @@ pub const CPROPV: Vector3D = Vector3D {
 #[no_mangle]
 pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
 {
-    let sqr2 = (2.0_f64).sqrt();
+    let sqr2 = (2_f64).sqrt();
     let p1 = Vector3D {
         x: (p0.x / sqr2),
         y: (p0.y / sqr2),
-        z: 1.0f64,
+        z: 1.0,
     };
 
     let rsq = p0.x * p0.x + p0.y * p0.y;
     let rsqsq = rsq * rsq;
 
-    let rm = trace_ray(p0, e0, lens, 0.0f64);
+    let rm = trace_ray(p0, e0, lens, 0.0);
     //let ym = rm.pvector;
     let (ymaoi, ymlsa) = calc_aoi_lsa(rm);
 
-    let rz = trace_ray(p1, e0, lens, 0.0f64);
+    let rz = trace_ray(p1, e0, lens, 0.0);
     //let yz = rz.pvector;
     let (_yzaoi, yzlsa) = calc_aoi_lsa(rz);
 
@@ -74,12 +74,10 @@ pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
     //let yfinal = rfinal.pvector;
     //let (yfaoi, yflsa) = calc_aoi_lsa(rfinal);
 
-    let a = (4.0f64 * yzlsa - ymlsa) / rsq;
-    let b = (2.0f64 * ymlsa - 4.0f64 * yzlsa) / rsqsq;
+    let a = (4.0 * yzlsa - ymlsa) / rsq;
+    let b = (2.0 * ymlsa - 4.0 * yzlsa) / rsqsq;
 
-    1000.0f64
-        * (ymaoi.sin() * ymaoi.sin() / 2.0f64)
-        * (refocus - a * rsq / 2.0f64 - b * rsqsq / 3.0f64)
+    1000.0 * (ymaoi.sin() * ymaoi.sin() / 2.0) * (refocus - a * rsq / 2.0 - b * rsqsq / 3.0)
         / lens.wl
 }
 
@@ -110,14 +108,14 @@ extern "C" fn gen_and_trace_wfe_rays(
     gen_wfe_rays(lens.ap, npts, din, loopsize);
 
     let mut wstats = WFE_Stats {
-        minopd: 1e20f64,
-        maxopd: -1e20f64,
-        varirms: 0f64,
+        minopd: 1e20,
+        maxopd: -1e20,
+        varirms: 0.0,
     };
 
-    let mut xsum = 0.0f64;
-    let mut xsumsq = 0.0f64;
-    let mut cts: f64 = 1.0;
+    let mut xsum = 0.0;
+    let mut xsumsq = 0.0;
+    let mut cts = 1.0;
 
     for i in 0..npts
     {
@@ -137,11 +135,11 @@ extern "C" fn gen_and_trace_wfe_rays(
 
                 xsum += din[i].opd;
                 xsumsq += din[i].opd * din[i].opd;
-                cts += 1.0f64;
+                cts += 1.0;
             }
         }
     }
-    wstats.varirms = ((xsumsq - xsum * xsum / cts) / (cts - 1f64)).sqrt();
+    wstats.varirms = ((xsumsq - xsum * xsum / cts) / (cts - 1.0)).sqrt();
 
     wstats
 }
@@ -170,14 +168,14 @@ fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: usize)
             din[count].iy = row as i32;
             din[count].isvalid = diag > x * x + y * y;
 
-            count = count + 1
+            count += 1
         }
     }
 }
 
 fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 {
-    let sqr2 = (2.0_f64).sqrt();
+    let sqr2 = (2_f64).sqrt();
 
     let p0 = wferay.rstart.pvector;
     let e0 = wferay.rstart.edir;
@@ -185,33 +183,33 @@ fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
     let p1 = Vector3D {
         x: (p0.x / sqr2),
         y: (p0.y / sqr2),
-        z: 1.0f64,
+        z: 1.0,
     };
 
     let rsq = p0.x * p0.x + p0.y * p0.y;
 
-    if rsq < 0.0000001f64
+    if rsq < 0.0000001
     {
         //wferay.rend = Ray{pvector: Vector3D{x: 0f64, y: 0f64, z: lens.ct + lens.bfl + refocus}, edir: Vector3D{x: 0f64, y: 0f64, z: 1f64}};
         wferay.rend = Ray {
             pvector: Vector3D {
-                x: 0f64,
-                y: 0f64,
+                x: 0.0,
+                y: 0.0,
                 z: lens.ct + lens.bfl + refocus,
             },
             edir: CPROPV,
         };
-        wferay.lsa = 0f64;
-        wferay.opd = 0f64;
+        wferay.lsa = 0.0;
+        wferay.opd = 0.0;
     }
 
     let rsqsq = rsq * rsq;
 
-    let rm = trace_ray(p0, e0, lens, 0.0f64);
+    let rm = trace_ray(p0, e0, lens, 0.0);
     //let ym = rm.pvector;
     let (ymaoi, ymlsa) = calc_aoi_lsa(rm);
 
-    let rz = trace_ray(p1, e0, lens, 0.0f64);
+    let rz = trace_ray(p1, e0, lens, 0.0);
     //let yz = rz.pvector;
     let (_yzaoi, yzlsa) = calc_aoi_lsa(rz);
 
@@ -221,13 +219,12 @@ fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
     wferay.rend = rfinal;
     wferay.lsa = yflsa;
 
-    let a = (4.0f64 * yzlsa - ymlsa) / rsq;
-    let b = (2.0f64 * ymlsa - 4.0f64 * yzlsa) / rsqsq;
+    let a = (4.0 * yzlsa - ymlsa) / rsq;
+    let b = (2.0 * ymlsa - 4.0 * yzlsa) / rsqsq;
 
-    wferay.opd = 1000.0f64
-        * (ymaoi.sin() * ymaoi.sin() / 2.0f64)
-        * (refocus - a * rsq / 2.0f64 - b * rsqsq / 3.0f64)
-        / lens.wl;
+    wferay.opd =
+        1000.0 * (ymaoi.sin() * ymaoi.sin() / 2.0) * (refocus - a * rsq / 2.0 - b * rsqsq / 3.0)
+            / lens.wl;
 }
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -310,7 +307,7 @@ pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
         }
         let pvbase = Vector3D { x: x, y: y, z: 0.0 };
 
-        for _j in 0..gr.num_angles
+        for _ in 0..gr.num_angles
         {
             xdir = rng.gen_range(-gr.half_ang, gr.half_ang);
             ydir = rng.gen_range(-gr.half_ang, gr.half_ang);
