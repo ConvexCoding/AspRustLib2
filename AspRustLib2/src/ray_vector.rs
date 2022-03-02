@@ -119,6 +119,5 @@ impl Div<f64> for Vector3D
 
 pub fn dot_product(v1: Vector3D, v2: Vector3D) -> f64
 {
-    let x = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-    return x;
+    v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }

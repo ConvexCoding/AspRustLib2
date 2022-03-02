@@ -77,11 +77,10 @@ pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
     let a = (4.0f64 * yzlsa - ymlsa) / rsq;
     let b = (2.0f64 * ymlsa - 4.0f64 * yzlsa) / rsqsq;
 
-    let opd = 1000.0f64
+    1000.0f64
         * (ymaoi.sin() * ymaoi.sin() / 2.0f64)
         * (refocus - a * rsq / 2.0f64 - b * rsqsq / 3.0f64)
-        / lens.wl;
-    return opd;
+        / lens.wl
 }
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -144,7 +143,7 @@ extern "C" fn gen_and_trace_wfe_rays(
     }
     wstats.varirms = ((xsumsq - xsum * xsum / cts) / (cts - 1f64)).sqrt();
 
-    return wstats;
+    wstats
 }
 
 fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: i32)
@@ -261,7 +260,7 @@ pub extern "C" fn tracerays(
         dout[i].edir = tr.edir;
     }
 
-    return dout[aposi].pvector.x;
+    dout[aposi].pvector.x
 }
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -289,7 +288,7 @@ pub extern "C" fn gen_trace_rays(
         dout[i].edir = tr.edir;
     }
 
-    return true;
+    true
 }
 
 #[no_mangle]
@@ -361,11 +360,11 @@ pub extern "C" fn trace_ray(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
 
     // transfer ray to image plane
     let p4 = translate_to_flat(p3, e3, lens.ct + lens.bfl + refocus);
-    let ofinal = Ray {
+
+    Ray {
         pvector: p4,
         edir: e3,
-    };
-    return ofinal;
+    }
 }
 
 #[no_mangle]
@@ -390,9 +389,9 @@ pub extern "C" fn trace_full_ray(ray: Ray, lens: &Lens, refocus: f64) -> Ray
 
     // transfer ray to image plane
     let p4 = translate_to_flat(p3, e3, lens.ct + lens.bfl + refocus);
-    let ofinal = Ray {
+
+    Ray {
         pvector: p4,
         edir: e3,
-    };
-    return ofinal;
+    }
 }

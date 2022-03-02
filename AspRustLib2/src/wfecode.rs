@@ -13,7 +13,7 @@ extern "C" fn tracewferays(
 
     gen_wfe_rays(5.0f64, npts, din, loopsize);
 
-    return npts as i32;
+    npts as i32
 }
 
 fn gen_wfe_rays(apert: f64, size: usize, din: &mut [WFE_Ray], loopsize: i32)
@@ -106,7 +106,7 @@ pub fn calcstuff(ray: Ray) -> (f64, f64)
     let lsa = -1.0f64 * (ray.pvector.x * ray.pvector.x + ray.pvector.y * ray.pvector.y).sqrt()
         / aoi.tan();
     //let lsa = -ray.pvector.ydir / ray.edir.y;
-    return (aoi, lsa);
+    (aoi, lsa)
 }
 
 fn calc_wfe(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
