@@ -121,7 +121,7 @@ extern "C" fn gen_and_trace_wfe_rays(
 
     for i in 0..npts
     {
-        if din[i].isvalid == 1
+        if din[i].isvalid
         {
             calc_wfe_ray(&mut din[i], &lens, refocus);
             if !din[i].opd.is_nan()
@@ -152,7 +152,7 @@ fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: usize)
     let mut y: f64;
     let diag = apert * apert;
 
-    let step = 2f64 * apert / (loopsize - 1) as f64;
+    let step = 2.0 * apert / (loopsize - 1) as f64;
     let mut count = 0usize;
 
     //let dirvector = Vector3D{x: 0.0f64, y: 0.0f64, z: 1.0f64};
@@ -168,15 +168,8 @@ fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: usize)
             din[count].rstart.edir = CPROPV;
             din[count].ix = col as i32;
             din[count].iy = row as i32;
+            din[count].isvalid = diag > x * x + y * y;
 
-            if diag > x * x + y * y
-            {
-                din[count].isvalid = 1i32;
-            }
-            else
-            {
-                din[count].isvalid = 0i32;
-            }
             count = count + 1
         }
     }

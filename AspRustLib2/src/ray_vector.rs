@@ -27,7 +27,7 @@ pub struct WFE_Ray
     pub lsa: f64,
     pub ix: i32,
     pub iy: i32,
-    pub isvalid: i32,
+    pub isvalid: bool,
 }
 
 #[derive(Copy, Clone)]

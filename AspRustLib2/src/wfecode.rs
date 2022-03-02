@@ -42,15 +42,8 @@ fn gen_wfe_rays(apert: f64, size: usize, din: &mut [WFE_Ray], loopsize: i32)
             din[count].rstart.edir = dirvector;
             din[count].ix = col;
             din[count].iy = row;
+            din[count].isvalid = diag > x * x + y * y;
 
-            if diag > x * x + y * y
-            {
-                din[count].isvalid = 1i32;
-            }
-            else
-            {
-                din[count].isvalid = 0i32;
-            }
             count = count + 1i32;
         }
     }
