@@ -47,7 +47,7 @@ pub struct WFE_Stats
 }
 
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Vector3D
 {
     pub x: f64,
@@ -128,3 +128,123 @@ impl_op!(/|a: &Vector3D, b: f64| -> Vector3D {
         z: a.z / b,
     }
 });
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn add_vectors()
+    {
+        let a = Vector3D {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        };
+        let b = Vector3D {
+            x: 2.0,
+            y: 2.0,
+            z: 2.0,
+        };
+
+        assert_eq!(
+            a + b,
+            Vector3D {
+                x: 3.0,
+                y: 3.0,
+                z: 3.0,
+            }
+        )
+    }
+
+    #[test]
+    fn sub_vectors()
+    {
+        let a = Vector3D {
+            x: 3.0,
+            y: 3.0,
+            z: 3.0,
+        };
+        let b = Vector3D {
+            x: 2.0,
+            y: 2.0,
+            z: 2.0,
+        };
+
+        assert_eq!(
+            a - b,
+            Vector3D {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            }
+        )
+    }
+
+    #[test]
+    fn mul_vectors()
+    {
+        let a = Vector3D {
+            x: 3.0,
+            y: 3.0,
+            z: 3.0,
+        };
+
+        assert_eq!(
+            a * 3.0,
+            Vector3D {
+                x: 9.0,
+                y: 9.0,
+                z: 9.0,
+            }
+        )
+    }
+
+    #[test]
+    fn div_vectors()
+    {
+        let a = Vector3D {
+            x: 3.0,
+            y: 3.0,
+            z: 3.0,
+        };
+
+        assert_eq!(
+            a / 2.0,
+            Vector3D {
+                x: 1.5,
+                y: 1.5,
+                z: 1.5,
+            }
+        )
+    }
+
+    #[test]
+    fn dot_vectors()
+    {
+        let a = Vector3D {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        };
+        let b = Vector3D {
+            x: 2.0,
+            y: 2.0,
+            z: 2.0,
+        };
+
+        assert_eq!(a.dot_product(&b), 6.0)
+    }
+
+    #[test]
+    fn vector_length()
+    {
+        let a = Vector3D {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        };
+        assert_eq!(format!("{:.4}", a.length()), "1.7321")
+    }
+}

@@ -51,7 +51,7 @@ fn gen_wfe_rays(apert: f64, size: usize, din: &mut [WFE_Ray], loopsize: i32)
 
 fn calc_wfe(wferay: WFE_Ray, lens: &Lens, refocus: f64)
 {
-    let sqr2 = (2_f64).sqrt();
+    let sqr2 = 2_f64.sqrt();
 
     let p0 = wferay.rstart.pvector;
     let e0 = wferay.rstart.edir;
@@ -95,15 +95,14 @@ pub fn calcstuff(ray: Ray) -> (f64, f64)
     };
     let edot = dot_product(ray.edir, eflat);
     let aoi = edot.acos();
-    let lsa =
-        -1.0 * (ray.pvector.x * ray.pvector.x + ray.pvector.y * ray.pvector.y).sqrt() / aoi.tan();
+    let lsa = -1.0 * (ray.pvector.x.powi(2) + ray.pvector.y.powi(2)).sqrt() / aoi.tan();
     //let lsa = -ray.pvector.ydir / ray.edir.y;
     (aoi, lsa)
 }
 
 fn calc_wfe(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 {
-    let sqr2 = (2_f64).sqrt();
+    let sqr2 = 2_f64.sqrt();
 
     let p0 = wferay.rstart.pvector;
     let e0 = wferay.rstart.edir;

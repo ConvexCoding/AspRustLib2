@@ -47,7 +47,7 @@ pub struct OpdResults
 #[no_mangle]
 pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
 {
-    let sqr2 = (2_f64).sqrt();
+    let sqr2 = 2_f64.sqrt();
     let p1 = Vector3D {
         x: (p0.x / sqr2),
         y: (p0.y / sqr2),
@@ -170,7 +170,7 @@ fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: usize)
 
 fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 {
-    let sqr2 = (2_f64).sqrt();
+    let sqr2 = 2_f64.sqrt();
 
     let p0 = &wferay.rstart.pvector;
     let e0 = &wferay.rstart.edir;
@@ -378,5 +378,17 @@ pub extern "C" fn trace_full_ray(ray: &Ray, lens: &Lens, refocus: f64) -> Ray
     Ray {
         pvector: p4,
         edir: e3,
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn it_works()
+    {
+        assert_eq!(2, 2)
     }
 }
