@@ -1,13 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
-
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct Vector3D
-{
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
+use std::ops;
 
 #[derive(Clone)]
 #[repr(C)]
@@ -39,85 +30,85 @@ pub struct WFE_Stats
     pub varirms: f64,
 }
 
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct Vector3D
+{
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
 impl Vector3D
 {
-    pub fn length(self) -> f64
+    pub fn length(&self) -> f64
     {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    pub fn _lengthsquared(self) -> f64
+    pub fn _lengthsquared(&self) -> f64
     {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
 
-    pub fn dot_product(self, other: Vector3D) -> f64
+    pub fn dot_product(&self, other: &Vector3D) -> f64
     {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
-impl Add for Vector3D
-{
-    type Output = Self;
-    fn add(self, other: Self) -> Self::Output
-    {
-        Self {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-        }
-    }
-}
+// use this crates macro to more easily implement all the operator overloads.
+// https://docs.rs/impl_ops/latest/impl_ops/
+// we are always creating a new vector as result of the operation and need to handle the ref cases
 
-impl Sub for Vector3D
-{
-    type Output = Self;
-    fn sub(self, other: Self) -> Self::Output
-    {
-        Self {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
-        }
+impl_op!(+|a: Vector3D, b: Vector3D| -> Vector3D { &a + &b });
+impl_op!(+|a: &Vector3D, b: Vector3D| -> Vector3D { a + &b });
+impl_op!(+|a: Vector3D, b: &Vector3D| -> Vector3D { &a + b });
+impl_op!(+|a: &Vector3D, b: &Vector3D| -> Vector3D {
+    Vector3D {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
     }
-}
+});
 
-impl Mul<f64> for Vector3D
-{
-    type Output = Self;
-    fn mul(self, other: f64) -> Self::Output
-    {
-        Self {
-            x: self.x * other,
-            y: self.y * other,
-            z: self.z * other,
-        }
+impl_op!(-|a: Vector3D, b: Vector3D| -> Vector3D { &a - &b });
+impl_op!(-|a: &Vector3D, b: Vector3D| -> Vector3D { a - &b });
+impl_op!(-|a: Vector3D, b: &Vector3D| -> Vector3D { &a - b });
+impl_op!(-|a: &Vector3D, b: &Vector3D| -> Vector3D {
+    Vector3D {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
     }
-}
+});
 
-impl Mul<Vector3D> for Vector3D
-{
-    type Output = Self;
-    fn mul(self, other: Self) -> Self::Output
-    {
-        Self {
-            x: self.x * other.x,
-            y: self.y * other.y,
-            z: self.z * other.z,
-        }
-    }
-}
+// we dont actually use this, maybe * should be dot product?
+// impl_op!(*|a: Vector3D, b: Vector3D| -> Vector3D { &a * &b });
+// impl_op!(*|a: &Vector3D, b: Vector3D| -> Vector3D { a * &b });
+// impl_op!(*|a: Vector3D, b: &Vector3D| -> Vector3D { &a * b });
+// impl_op!(*|a: &Vector3D, b: &Vector3D| -> Vector3D {
+//     Vector3D {
+//         x: a.x * b.x,
+//         y: a.y * b.y,
+//         z: a.z * b.z,
+//     }
+// });
 
-impl Div<f64> for Vector3D
-{
-    type Output = Self;
-    fn div(self, other: f64) -> Self::Output
-    {
-        Self {
-            x: self.x / other,
-            y: self.y / other,
-            z: self.z / other,
-        }
+impl_op!(*|a: Vector3D, b: f64| -> Vector3D { &a * b });
+impl_op!(*|a: &Vector3D, b: f64| -> Vector3D {
+    Vector3D {
+        x: a.x * b,
+        y: a.y * b,
+        z: a.z * b,
     }
-}
+});
+
+impl_op!(/|a: Vector3D, b: f64| -> Vector3D { &a / b });
+impl_op!(/|a: &Vector3D, b: f64| -> Vector3D {
+    Vector3D {
+        x: a.x / b,
+        y: a.y / b,
+        z: a.z / b,
+    }
+});

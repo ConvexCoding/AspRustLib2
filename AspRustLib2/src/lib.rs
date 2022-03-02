@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate impl_ops;
+
 use rand::Rng;
 
 use crate::lens_struct::{Lens, Side};
@@ -62,13 +65,13 @@ pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
     let rsq = p0.x * p0.x + p0.y * p0.y;
     let rsqsq = rsq * rsq;
 
-    let rm = trace_ray(p0, e0, lens, 0.0);
+    let rm = trace_ray(&p0, &e0, lens, 0.0);
     //let ym = rm.pvector;
-    let (ymaoi, ymlsa) = calc_aoi_lsa(rm);
+    let (ymaoi, ymlsa) = calc_aoi_lsa(&rm);
 
-    let rz = trace_ray(p1, e0, lens, 0.0);
+    let rz = trace_ray(&p1, &e0, lens, 0.0);
     //let yz = rz.pvector;
-    let (_yzaoi, yzlsa) = calc_aoi_lsa(rz);
+    let (_yzaoi, yzlsa) = calc_aoi_lsa(&rz);
 
     //let rfinal = trace_ray(p0, e0, lens, refocus);
     //let yfinal = rfinal.pvector;
@@ -177,8 +180,8 @@ fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 {
     let sqr2 = (2_f64).sqrt();
 
-    let p0 = wferay.rstart.pvector;
-    let e0 = wferay.rstart.edir;
+    let p0 = &wferay.rstart.pvector;
+    let e0 = &wferay.rstart.edir;
 
     let p1 = Vector3D {
         x: (p0.x / sqr2),
@@ -205,17 +208,17 @@ fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 
     let rsqsq = rsq * rsq;
 
-    let rm = trace_ray(p0, e0, lens, 0.0);
+    let rm = trace_ray(&p0, &e0, lens, 0.0);
     //let ym = rm.pvector;
-    let (ymaoi, ymlsa) = calc_aoi_lsa(rm);
+    let (ymaoi, ymlsa) = calc_aoi_lsa(&rm);
 
-    let rz = trace_ray(p1, e0, lens, 0.0);
+    let rz = trace_ray(&p1, &e0, lens, 0.0);
     //let yz = rz.pvector;
-    let (_yzaoi, yzlsa) = calc_aoi_lsa(rz);
+    let (_yzaoi, yzlsa) = calc_aoi_lsa(&rz);
 
-    let rfinal = trace_ray(p0, e0, lens, refocus);
+    let rfinal = trace_ray(&p0, &e0, lens, refocus);
     //let yfinal = rfinal.pvector;
-    let (_yfaoi, yflsa) = calc_aoi_lsa(rfinal);
+    let (_yfaoi, yflsa) = calc_aoi_lsa(&rfinal);
     wferay.rend = rfinal;
     wferay.lsa = yflsa;
 
@@ -245,7 +248,7 @@ pub extern "C" fn tracerays(
 
     for i in 0..npts
     {
-        let tr = trace_ray(din[i].pvector, din[i].edir, &lens, refocus);
+        let tr = trace_ray(&din[i].pvector, &din[i].edir, &lens, refocus);
         dout[i].pvector = tr.pvector;
         dout[i].edir = tr.edir;
     }
@@ -273,7 +276,7 @@ pub extern "C" fn gen_trace_rays(
 
     for i in 0..npts
     {
-        let tr = trace_ray(din[i].pvector, din[i].edir, &lens, refocus);
+        let tr = trace_ray(&din[i].pvector, &din[i].edir, &lens, refocus);
         dout[i].pvector = tr.pvector;
         dout[i].edir = tr.edir;
     }
@@ -321,7 +324,7 @@ pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
                 y: ydir,
                 z: (1.0 - xdir * xdir - ydir * ydir).sqrt(),
             };
-            din[count].pvector = pvbase;
+            din[count].pvector = pvbase.clone();
             din[count].edir = edir;
             count += 1;
         }
@@ -329,27 +332,27 @@ pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
 }
 
 #[no_mangle]
-pub extern "C" fn trace_ray(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> Ray
+pub extern "C" fn trace_ray(p0: &Vector3D, e0: &Vector3D, lens: &Lens, refocus: f64) -> Ray
 {
     // Trace ray from srf 0 to first lens surface. The axial distance here should be zero.
     let p2 = translate_to_surface(p0, e0, &lens.side1, 0.0);
-    let n2 = calc_slope(p2, &lens.side1);
-    let e2 = calc_dir_sines(e0, n2, 1.0, lens.n); // after refraction
+    let n2 = calc_slope(&p2, &lens.side1);
+    let e2 = calc_dir_sines(&e0, &n2, 1.0, lens.n); // after refraction
 
     // Trace to Surface 2 after refraction
-    let p3 = translate_to_surface(p2, e2, &lens.side2, lens.ct);
+    let p3 = translate_to_surface(&p2, &e2, &lens.side2, lens.ct);
     let n3 = calc_slope(
-        Vector3D {
+        &Vector3D {
             x: p3.x,
             y: p3.y,
             z: p3.z - lens.ct,
         },
         &lens.side2,
     ); // adjust z for CT of lens
-    let e3 = calc_dir_sines(e2, n3, lens.n, 1.0);
+    let e3 = calc_dir_sines(&e2, &n3, lens.n, 1.0);
 
     // transfer ray to image plane
-    let p4 = translate_to_flat(p3, e3, lens.ct + lens.bfl + refocus);
+    let p4 = translate_to_flat(&p3, &e3, lens.ct + lens.bfl + refocus);
 
     Ray {
         pvector: p4,
@@ -358,27 +361,27 @@ pub extern "C" fn trace_ray(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f6
 }
 
 #[no_mangle]
-pub extern "C" fn trace_full_ray(ray: Ray, lens: &Lens, refocus: f64) -> Ray
+pub extern "C" fn trace_full_ray(ray: &Ray, lens: &Lens, refocus: f64) -> Ray
 {
     // Trace ray from srf 0 to first lens surface. The axial distance here should be zero.
-    let p2 = translate_to_surface(ray.pvector, ray.edir, &lens.side1, 0.0);
-    let n2 = calc_slope(p2, &lens.side1);
-    let e2 = calc_dir_sines(ray.edir, n2, 1.0, lens.n); // after refraction
+    let p2 = translate_to_surface(&ray.pvector, &ray.edir, &lens.side1, 0.0);
+    let n2 = calc_slope(&p2, &lens.side1);
+    let e2 = calc_dir_sines(&ray.edir, &n2, 1.0, lens.n); // after refraction
 
     // Trace to Surface 2 after refraction
-    let p3 = translate_to_surface(p2, e2, &lens.side2, lens.ct);
+    let p3 = translate_to_surface(&p2, &e2, &lens.side2, lens.ct);
     let n3 = calc_slope(
-        Vector3D {
+        &Vector3D {
             x: p3.x,
             y: p3.y,
             z: p3.z - lens.ct,
         },
         &lens.side2,
     ); // adjust z for CT of lens
-    let e3 = calc_dir_sines(e2, n3, lens.n, 1.0);
+    let e3 = calc_dir_sines(&e2, &n3, lens.n, 1.0);
 
     // transfer ray to image plane
-    let p4 = translate_to_flat(p3, e3, lens.ct + lens.bfl + refocus);
+    let p4 = translate_to_flat(&p3, &e3, lens.ct + lens.bfl + refocus);
 
     Ray {
         pvector: p4,
