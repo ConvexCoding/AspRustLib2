@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rand = "0.7.0" # Or a newer version
+impl_ops = "0.1.1"
