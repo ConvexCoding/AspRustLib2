@@ -2,7 +2,7 @@
 name = "aspmainlib"
 version = "0.1.0"
 edition = "2021"
-authors = ["Gary Herrit <glherrit@zoominternet.net>"]
+authors = ["Gary Herrit <glherrit@zoominternet.net>;Justin Kovalchuk < >"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -11,3 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 rand = "0.7.0" # Or a newer version
 impl_ops = "0.1.1"
+num-complex = "0.4"

@@ -12,6 +12,14 @@ mod ray_vector;
 use crate::rtm_subs::{calc_dir_sines, calc_slope, translate_to_flat, translate_to_surface};
 mod rtm_subs;
 
+mod tools;
+use tools::ffttools::{gen_zero_2d, get_complex_vec, slicecore, find_max};
+use tools::fft2d::rustfft;
+
+use std::f64::consts::SQRT_2 as sqr2;
+use std::f64::consts::PI;
+
+
 //extern crate regex;
 //use regex::Regex;
 
@@ -39,6 +47,113 @@ pub struct OpdResults
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
 
+//        //private unsafe static extern double[] gen_psf(UIntPtr loopsize, UIntPtr paddedsize, UIntPtr psfsize, LensWOStrings lens, double refocus);
+//  external fn callable from c# that will generate a psf given lens, ap, and various grid sizes
+//  most of the work is down in folder tools, files fft2d.rs and ffttools.rs
+//  one exception is that the wavefront is first constructed using the slightly optimized calc_opd fn added to this file
+
+#[no_mangle]
+extern "C" fn gen_psf(
+    ptr: *mut f64,
+    loopsize: usize,
+    totalsize: usize,
+    psfgridsize: usize,
+    lens: Lens,
+    refocus: f64,
+) -> f64
+{
+    let psfdata: &mut [f64] = unsafe { std::slice::from_raw_parts_mut(ptr, psfgridsize * psfgridsize) };
+
+    //gen_wfe_rays(lens.ap, totalsize, din, loopsize);
+
+    let mut amp = gen_zero_2d(loopsize);
+    let mut mask = gen_zero_2d(loopsize);
+
+    let mut x: f64;
+    let mut y: f64;
+    let diag = lens.ap * lens.ap;
+
+    let step = 2.0 * lens.ap / (loopsize - 1) as f64;
+    
+    for row in 0..psfgridsize
+    {
+        y = lens.ap - row as f64 * step;
+        for col in 0..psfgridsize
+        {
+            x = -lens.ap + col as f64 * step;
+            if (x * x + y * y) < diag {
+                let p0 = Vector3D { x, y, z: 0.0 };
+                amp[row][col] =   2.0 * PI * calc_opd(p0, CPROPV, &lens, refocus);  // multiply by 2pi to scale for fft
+                mask[row][col] = 1.0;
+            }
+            else { 
+                amp[row][col] = 0.0;
+                mask[row][col] = 0.0;
+            }
+        }
+    }
+
+    let mut data = get_complex_vec(&amp, &mask, totalsize);
+    let mut datadl = get_complex_vec(&mask, &mask, totalsize);
+    let datafull = rustfft(&mut data, &mut datadl);
+    let _datatoc = slicecore(datafull, psfgridsize);
+
+    for row in 0..psfgridsize
+    {
+        for col in 0..psfgridsize
+        {
+            psfdata[row * psfgridsize + col] = _datatoc[row][col];
+        }
+    }
+
+
+    return find_max(_datatoc);
+}
+
+
+// this opd calc is used specifically for FFT2D calculates and is optimized for only opd
+fn calc_opd(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
+{
+    //let sqr2 = 2_f64.sqrt();
+
+    let p1 = Vector3D {
+        x: (p0.x / sqr2),
+        y: (p0.y / sqr2),
+        z: 1.0,
+    };
+
+    let rsq = p0.x * p0.x + p0.y * p0.y;
+
+    if rsq < 1.0e-10 {
+        return 0.0_f64;
+    }
+
+    let rsqsq = rsq * rsq;
+
+    let rm = trace_ray(&p0, &e0, lens, 0.0);
+    //let ym = rm.pvector;
+    let (ymaoi, ymlsa) = rm.calc_aoi_lsa();
+
+    let rz = trace_ray(&p1, &e0, lens, 0.0);
+    //let yz = rz.pvector;
+    let (_yzaoi, yzlsa) = rz.calc_aoi_lsa();
+
+    let rfinal = trace_ray(&p0, &e0, lens, refocus);
+    //let yfinal = rfinal.pvector;
+    let (_yfaoi, _yflsa) = rfinal.calc_aoi_lsa();
+
+    let a = (4.0 * yzlsa - ymlsa) / rsq;
+    let b = (2.0 * ymlsa - 4.0 * yzlsa) / rsqsq;
+
+    1000.0 * (ymaoi.sin() * ymaoi.sin() / 2.0) * (refocus - a * rsq / 2.0 - b * rsqsq / 3.0) / lens.wl
+
+}
+
+
+
+// +++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++
+
 // method used in calculating opd
 // single pvector and edir Vector3D's
 // in the constrcution of WFE maps - AspGens
@@ -47,7 +162,6 @@ pub struct OpdResults
 #[no_mangle]
 pub extern "C" fn rcalc_wfe(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
 {
-    let sqr2 = 2_f64.sqrt();
     let p1 = Vector3D {
         x: (p0.x / sqr2),
         y: (p0.y / sqr2),
@@ -170,8 +284,6 @@ fn gen_wfe_rays(apert: f64, _size: usize, din: &mut [WFE_Ray], loopsize: usize)
 
 fn calc_wfe_ray(wferay: &mut WFE_Ray, lens: &Lens, refocus: f64)
 {
-    let sqr2 = 2_f64.sqrt();
-
     let p0 = &wferay.rstart.pvector;
     let e0 = &wferay.rstart.edir;
 
