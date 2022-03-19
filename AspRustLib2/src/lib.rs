@@ -493,7 +493,7 @@ pub extern "C" fn gen_trace_rays(
     let din: &mut [Ray] = unsafe { std::slice::from_raw_parts_mut(ptrin, npts) };
     let dout: &mut [Ray] = unsafe { std::slice::from_raw_parts_mut(prtout, npts) };
 
-    gen_random_rays_while(gr, din);
+    gen_random_rays(gr, din);
 
     for i in 0..npts
     {
@@ -521,8 +521,8 @@ pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
 
     for _ in 0..gr.baserays
     {
-        r = gr.half_ap * (rng.gen_range(0.0_f64, 1.0_f64)).sqrt();
-        a = maxangle * rng.gen_range(0.0_f64, 1.0_f64);
+        r = gr.half_ap * rng.gen_range(0.0_f64, 1.0).sqrt();
+        a = rng.gen_range(0.0_f64, maxangle );
         x = r * a.cos();
         y = r * a.sin();
 
@@ -530,8 +530,8 @@ pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
 
         for _ in 0..gr.num_angles
         {
-            r = gr.half_ang * (rng.gen_range(0.0_f64, 1.0_f64)).sqrt();
-            a = maxangle * rng.gen_range(0.0_f64, 1.0_f64);
+            r = gr.half_ang  * rng.gen_range(0.0_f64, 1.0).sqrt();
+            a = rng.gen_range(0.0_f64, maxangle );
             xdir = r * a.cos();
             ydir = r * a.sin();
 
