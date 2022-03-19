@@ -3,18 +3,13 @@ extern crate impl_ops;
 
 use rand::Rng;
 
-use crate::lens_struct::{Lens, Side};
-mod lens_struct;
-
-use crate::ray_vector::{Ray, Vector3D, WFE_Ray, WFE_Stats, CPROPV};
-mod ray_vector;
-
-use crate::rtm_subs::{calc_dir_sines, calc_slope, translate_to_flat, translate_to_surface};
-mod rtm_subs;
-
 mod tools;
+use tools::rtm_subs::{trace_full_ray, calc_dir_sines, calc_slope, translate_to_flat, translate_to_surface};
 use tools::ffttools::{gen_zero_2d, get_complex_vec, slicecore, find_max};
 use tools::fft2d::rustfft;
+use tools::ray_vector::{Ray, Vector3D, WFE_Ray, WFE_Stats, CPROPV};
+use tools::lens_struct::{Lens, OptVariables};
+use tools::optimize::opti_lens;
 
 use std::f64::consts::SQRT_2 as sqr2;
 use std::f64::consts::PI;
@@ -32,11 +27,14 @@ pub struct GenRays
     half_ang: f64,
 }
 
-pub struct OpdResults
+#[repr(C)]
+pub struct ErrorStat
 {
-    pub rfinal: Ray,
-    pub opd: f64,
-    pub lsa: f64,
+    peak: f64,
+    valley: f64,
+    pv: f64,
+    average: f64,
+    rms: f64,
 }
 
 //
@@ -44,10 +42,127 @@ pub struct OpdResults
 // External Functions visible over FFI
 //
 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++   GEN CalcErrorFunc  ++++++++++++++++++
+
+#[no_mangle]
+extern "C" fn calc_err_func(
+    ptr1: *mut f64,
+    ptr2: *mut Ray,
+    rayct: usize,
+    lens: Lens,
+    refocus: f64,
+) -> f64
+{
+    let ray_ys: &mut [f64] = unsafe { std::slice::from_raw_parts_mut(ptr1, rayct) };
+    let rayout: &mut [Ray] = unsafe { std::slice::from_raw_parts_mut(ptr2, rayct) };
+
+    let mut sumsum: f64 = 0.0;
+
+    let mut _mlens: Lens = lens;
+
+    for i in 0..rayct{
+        let ray: Ray = Ray{pvector: Vector3D{x: 0.0, y: ray_ys[i] * lens.ap, z: 0.0}, edir: CPROPV};
+        rayout[i] = trace_full_ray(&ray, &lens, refocus);
+        sumsum += rayout[i].pvector.y * rayout[i].pvector.y;
+    }
+    //mlens.side2.r = 2000.0;
+    return (sumsum / rayct as f64).sqrt();
+}
+
+#[no_mangle]
+extern "C" fn optimize_lens(
+    ptr1: *mut f64,
+    rayct: usize,
+    lens: Lens,
+    optv: OptVariables
+) -> Lens
+{
+    let ray_ys: &mut [f64] = unsafe { std::slice::from_raw_parts_mut(ptr1, rayct) };
+
+    /*
+    let mut tracker: i32 = 0;
+    if optv.iscc1on == 1 { tracker = -1;}
+    if optv.isad1on == 1 { tracker = -2;}
+    if optv.isae1on == 1 { tracker = -3;}
+    if optv.iscc2on == 1 { tracker = -4;}
+    if optv.isad2on == 1 { tracker = -5;}
+    if optv.isae2on == 1 { tracker = -6;}
+    */
+
+    let mlens = opti_lens(&ray_ys, lens, &optv);
+    return mlens;
+}
+
+#[no_mangle]
+extern "C" fn calc_meritfunction_stats(
+    ptr1: *mut f64,
+    rayct: usize,
+    lens: Lens,
+    refocus: f64,
+) -> ErrorStat
+{
+    let ray_ys: &mut [f64] = unsafe { std::slice::from_raw_parts_mut(ptr1, rayct) };
+
+    let mut sum: f64 = 0.0;
+    let mut sumsum: f64 = 0.0;
+    let mut peak: f64 = -1.0e20;
+    let mut valley: f64 = 1.0e20;
+
+    let mut _mlens: Lens = lens;
+
+    for i in 0..rayct{
+        let ray: Ray = Ray{pvector: Vector3D{x: 0.0, y: ray_ys[i] * lens.ap, z: 0.0}, edir: CPROPV};
+        let rimage = trace_full_ray(&ray, &lens, refocus);
+        if rimage.pvector.y > peak {
+            peak = rimage.pvector.y
+        }
+        if rimage.pvector.y < valley {
+            valley = rimage.pvector.y
+        }
+        sum += rimage.pvector.y;
+        sumsum += rimage.pvector.y * rimage.pvector.y;
+    }
+    let estat = ErrorStat{peak, valley, pv: (peak - valley), average: sum / rayct as f64, rms: (sumsum / rayct as f64).sqrt()};
+    return estat;
+}
+
+#[no_mangle]
+extern "C" fn calc_wfe_stats(
+    ptr1: *mut f64,
+    rayct: usize,
+    lens: Lens,
+    refocus: f64,
+) -> ErrorStat
+{
+    let ray_ys: &mut [f64] = unsafe { std::slice::from_raw_parts_mut(ptr1, rayct) };
+
+    let mut sum: f64 = 0.0;
+    let mut sumsum: f64 = 0.0;
+    let mut peak: f64 = -1.0e20;
+    let mut valley: f64 = 1.0e20;
+
+    let mut _mlens: Lens = lens;
+
+    for i in 0..rayct{
+        let wfe = calc_opd_slim(Vector3D{x: 0.0, y: ray_ys[i] * lens.ap, z: 0.0}, CPROPV, &lens, refocus);
+        if wfe > peak {
+            peak = wfe
+        }
+        if wfe < valley {
+            valley = wfe
+        }
+        sum += wfe;
+        sumsum += wfe * wfe;
+    }
+    let estat = ErrorStat{peak, valley, pv: (peak - valley), average: sum / rayct as f64, rms: (sumsum / rayct as f64).sqrt()};
+    return estat;
+}
+// +++++++++++++++  GEN CalcErrorFunc END ++++++++++++
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//        //private unsafe static extern double[] gen_psf(UIntPtr loopsize, UIntPtr paddedsize, UIntPtr psfsize, LensWOStrings lens, double refocus);
+//  private unsafe static extern double[] gen_psf(UIntPtr loopsize, UIntPtr paddedsize, UIntPtr psfsize, LensWOStrings lens, double refocus);
+//
 //  external fn callable from c# that will generate a psf given lens, ap, and various grid sizes
 //  most of the work is down in folder tools, files fft2d.rs and ffttools.rs
 //  one exception is that the wavefront is first constructed using the slightly optimized calc_opd fn added to this file
@@ -83,7 +198,7 @@ extern "C" fn gen_psf(
             x = -lens.ap + col as f64 * step;
             if (x * x + y * y) < diag {
                 let p0 = Vector3D { x, y, z: 0.0 };
-                amp[row][col] =   2.0 * PI * calc_opd(p0, CPROPV, &lens, refocus);  // multiply by 2pi to scale for fft
+                amp[row][col] =   2.0 * PI * calc_opd_slim(p0, CPROPV, &lens, refocus);  // multiply by 2pi to scale for fft
                 mask[row][col] = 1.0;
             }
             else { 
@@ -111,8 +226,8 @@ extern "C" fn gen_psf(
 }
 
 
-// this opd calc is used specifically for FFT2D calculates and is optimized for only opd
-fn calc_opd(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
+// this opd calc is used specifically for FFT2D calculations and is optimized for only opd
+fn calc_opd_slim(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
 {
     //let sqr2 = 2_f64.sqrt();
 
@@ -150,6 +265,7 @@ fn calc_opd(p0: Vector3D, e0: Vector3D, lens: &Lens, refocus: f64) -> f64
 }
 
 
+// +++++++++++++++   GEN PSF  End  +++++++++++++++++++
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -352,7 +468,8 @@ pub extern "C" fn tracerays(
 
     for i in 0..npts
     {
-        let tr = trace_ray(&din[i].pvector, &din[i].edir, &lens, refocus);
+        //let tr = trace_ray(&din[i].pvector, &din[i].edir, &lens, refocus);
+        let tr = trace_full_ray(&din[i], &lens, refocus);
         dout[i].pvector = tr.pvector;
         dout[i].edir = tr.edir;
     }
@@ -376,11 +493,11 @@ pub extern "C" fn gen_trace_rays(
     let din: &mut [Ray] = unsafe { std::slice::from_raw_parts_mut(ptrin, npts) };
     let dout: &mut [Ray] = unsafe { std::slice::from_raw_parts_mut(prtout, npts) };
 
-    gen_random_rays(gr, din);
+    gen_random_rays_while(gr, din);
 
     for i in 0..npts
     {
-        let tr = trace_ray(&din[i].pvector, &din[i].edir, &lens, refocus);
+        let tr = trace_full_ray(&din[i], &lens, refocus);
         dout[i].pvector = tr.pvector;
         dout[i].edir = tr.edir;
     }
@@ -390,6 +507,47 @@ pub extern "C" fn gen_trace_rays(
 
 #[no_mangle]
 pub fn gen_random_rays(gr: GenRays, din: &mut [Ray])
+{
+    let mut x: f64;
+    let mut y: f64;
+    let mut xdir: f64;
+    let mut ydir: f64;
+    let mut a: f64;
+    let mut r: f64;
+    let maxangle: f64 = 2.0 * PI;
+    let mut count: usize = 0;
+
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..gr.baserays
+    {
+        r = gr.half_ap * (rng.gen_range(0.0_f64, 1.0_f64)).sqrt();
+        a = maxangle * rng.gen_range(0.0_f64, 1.0_f64);
+        x = r * a.cos();
+        y = r * a.sin();
+
+        let pvbase = Vector3D { x: x, y: y, z: 0.0 };
+
+        for _ in 0..gr.num_angles
+        {
+            r = gr.half_ang * (rng.gen_range(0.0_f64, 1.0_f64)).sqrt();
+            a = maxangle * rng.gen_range(0.0_f64, 1.0_f64);
+            xdir = r * a.cos();
+            ydir = r * a.sin();
+
+            let edir = Vector3D {
+                x: xdir,
+                y: ydir,
+                z: (1.0 - xdir * xdir - ydir * ydir).sqrt(),
+            };
+            din[count].pvector = pvbase.clone();
+            din[count].edir = edir;
+            count += 1;
+        }
+    }
+}
+
+pub fn gen_random_rays_while(gr: GenRays, din: &mut [Ray])
 {
     let mut x: f64;
     let mut y: f64;
@@ -458,40 +616,16 @@ pub extern "C" fn trace_ray(p0: &Vector3D, e0: &Vector3D, lens: &Lens, refocus: 
     // transfer ray to image plane
     let p4 = translate_to_flat(&p3, &e3, lens.ct + lens.bfl + refocus);
 
+    
     Ray {
         pvector: p4,
         edir: e3,
     }
+    
+    //let one: f64 = p0.y;
+    //return Ray{pvector: Vector3D{x: one, y: one, z: one}, edir: Vector3D{x: one, y: one, z: one}};
 }
 
-#[no_mangle]
-pub extern "C" fn trace_full_ray(ray: &Ray, lens: &Lens, refocus: f64) -> Ray
-{
-    // Trace ray from srf 0 to first lens surface. The axial distance here should be zero.
-    let p2 = translate_to_surface(&ray.pvector, &ray.edir, &lens.side1, 0.0);
-    let n2 = calc_slope(&p2, &lens.side1);
-    let e2 = calc_dir_sines(&ray.edir, &n2, 1.0, lens.n); // after refraction
-
-    // Trace to Surface 2 after refraction
-    let p3 = translate_to_surface(&p2, &e2, &lens.side2, lens.ct);
-    let n3 = calc_slope(
-        &Vector3D {
-            x: p3.x,
-            y: p3.y,
-            z: p3.z - lens.ct,
-        },
-        &lens.side2,
-    ); // adjust z for CT of lens
-    let e3 = calc_dir_sines(&e2, &n3, lens.n, 1.0);
-
-    // transfer ray to image plane
-    let p4 = translate_to_flat(&p3, &e3, lens.ct + lens.bfl + refocus);
-
-    Ray {
-        pvector: p4,
-        edir: e3,
-    }
-}
 
 #[cfg(test)]
 mod tests
