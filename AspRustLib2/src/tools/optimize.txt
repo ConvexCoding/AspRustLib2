@@ -1,0 +1,233 @@
+use super::lens_struct::{Lens, OptVariables};
+use super::ray_vector::{Ray, Vector3D, CPROPV};
+use super::rtm_subs::trace_full_ray;
+
+//pub fn opti_lens(rays: &[f64], lensin: Lens, optv: &OptVariables) -> Lens
+pub fn opti_lens(ray_ys: &[f64], lensin: Lens, optv: &OptVariables) -> Lens
+{
+    let mut lens = lensin;
+
+    let mut rays: Vec<Ray>  = Vec::with_capacity(ray_ys.len());
+    for i in 0..ray_ys.len(){
+        rays.push( Ray{pvector: Vector3D{x: 0.0, y: ray_ys[i] * lens.ap, z: 0.0}, edir: CPROPV});
+    }
+    
+    /*
+    let mut cc: f64;
+    let mut ad: f64;
+    let mut ae: f64;
+    */
+    let (mut cc, mut ad, mut ae);
+    let loopsize = 15;
+
+    for _k in 0..loopsize 
+    {
+        for _j in 0..loopsize
+        {
+            let (mut deltk, mut deltad, mut deltae, mintweakstep) = (0.6, 3.1e-7, 1.1e-9, 1e-15);
+
+            for _i in 0..loopsize
+            {                 
+                if optv.iscc1on == 1
+                {
+                    cc = cc1dir(&mut lens, &rays, deltk);
+                    lens.side1.k += cc;
+                    if cc.abs() < mintweakstep {
+                        deltk /= 10.0;
+                    }
+                }
+
+                if optv.isad1on == 1
+                {
+                    ad = ad1dir(&mut lens, &rays, deltad);
+                    lens.side1.ad += ad;
+                    if ad.abs() < mintweakstep {
+                        deltad /= 10.0;
+                    }
+                }
+
+                if optv.isae1on == 1
+                {
+                    ae = ae1dir(&mut lens, &rays, deltae);
+                    lens.side1.ae += ae;
+                    if ae.abs() < mintweakstep {
+                        deltae /= 10.0;
+                    }
+                }
+
+                if optv.iscc2on == 1
+                {
+                    cc = cc2dir(&mut lens, &rays, deltk);
+                    lens.side2.k += cc;
+                    if cc.abs() < mintweakstep {
+                        deltk /= 10.0;
+                    }
+                }
+
+                if optv.isad2on == 1
+                {
+                    ad = ad2dir(&mut lens, &rays, deltad);
+                    lens.side2.ad += ad;
+                    if ad.abs() < mintweakstep {
+                        deltad /= 10.0;
+                    }
+                }
+
+                if optv.isae2on == 1
+                {
+                    ae = ae2dir(&mut lens, &rays, deltae);
+                    lens.side2.ae += ae;
+                    if ae.abs() < mintweakstep {
+                        deltae /= 10.0;
+                    }
+                }
+            }
+        }
+    }
+
+    return lens;
+}
+
+
+
+fn cc1dir(lens: &mut Lens, rays: &Vec<Ray>, delta_x: f64) -> f64
+{
+    let ( basevalue, center, right, left);
+
+    basevalue = lens.side1.k;
+    center = calc_err_slim(&lens, &rays);
+    lens.side1.k += delta_x;
+    right = calc_err_slim(&lens, &rays);
+    lens.side1.k-= 2.0_f64 * delta_x;
+    left = calc_err_slim(&lens, &rays);
+    lens.side1.k = basevalue;
+
+    if left < center { 
+        return -delta_x;
+    }
+    if right < center {
+        return delta_x;
+    }
+    return 0.0;
+}
+
+
+fn ad1dir(lens: &mut Lens, rays: &Vec<Ray>, delta_x: f64) -> f64
+{
+    let ( basevalue, center, right, left);
+
+    basevalue = lens.side1.ad;
+    center = calc_err_slim(&lens, &rays);
+    lens.side1.ad += delta_x;
+    right = calc_err_slim(&lens, &rays);
+    lens.side1.ad-= 2.0_f64 * delta_x;
+    left = calc_err_slim(&lens, &rays);
+    lens.side1.ad = basevalue;
+
+    if left < center { 
+        return -delta_x;
+    }
+    if right < center {
+        return delta_x;
+    }
+    return 0.0;
+}
+
+fn ae1dir(lens: &mut Lens, rays: &Vec<Ray>, delta_x: f64) -> f64
+{
+    let ( basevalue, center, right, left);
+
+    basevalue = lens.side1.ae;
+    center = calc_err_slim(&lens, &rays);
+    lens.side1.ae += delta_x;
+    right = calc_err_slim(&lens, &rays);
+    lens.side1.ae-= 2.0_f64 * delta_x;
+    left = calc_err_slim(&lens, &rays);
+    lens.side1.ae = basevalue;
+
+    if left < center { 
+        return -delta_x;
+    }
+    if right < center {
+        return delta_x;
+    }
+    return 0.0;
+}
+
+
+fn cc2dir(lens: &mut Lens, rays: &Vec<Ray>, delta_x: f64) -> f64
+{
+    let ( basevalue, center, right, left);
+
+    basevalue = lens.side2.k;
+    center = calc_err_slim(&lens, &rays);
+    lens.side2.k += delta_x;
+    right = calc_err_slim(&lens, &rays);
+    lens.side2.k-= 2.0_f64 * delta_x;
+    left = calc_err_slim(&lens, &rays);
+    lens.side2.k = basevalue;
+
+    if left < center { 
+        return -delta_x;
+    }
+    if right < center {
+        return delta_x;
+    }
+    return 0.0;
+}
+
+
+fn ad2dir(lens: &mut Lens, rays: &Vec<Ray>, delta_x: f64) -> f64
+{
+    let ( basevalue, center, right, left);
+
+    basevalue = lens.side2.ad;
+    center = calc_err_slim(&lens, &rays);
+    lens.side2.ad += delta_x;
+    right = calc_err_slim(&lens, &rays);
+    lens.side2.ad-= 2.0_f64 * delta_x;
+    left = calc_err_slim(&lens, &rays);
+    lens.side2.ad = basevalue;
+
+    if left < center { 
+        return -delta_x;
+    }
+    if right < center {
+        return delta_x;
+    }
+    return 0.0;
+}
+
+fn ae2dir(lens: &mut Lens, rays: &Vec<Ray>, delta_x: f64) -> f64
+{
+    let ( basevalue, center, right, left);
+
+    basevalue = lens.side2.ae;
+    center = calc_err_slim(&lens, &rays);
+    lens.side2.ae += delta_x;
+    right = calc_err_slim(&lens, &rays);
+    lens.side2.ae-= 2.0_f64 * delta_x;
+    left = calc_err_slim(&lens, &rays);
+    lens.side2.ae = basevalue;
+
+    if left < center { 
+        return -delta_x;
+    }
+    if right < center {
+        return delta_x;
+    }
+    return 0.0;
+}
+
+fn calc_err_slim(lens: &Lens, rays: &Vec<Ray>) -> f64
+{
+    let rayct = rays.len();
+    let mut sumsum: f64 = 0.0;
+
+    for i in 0..rayct{
+        let rayout = trace_full_ray(&rays[i], &lens, 0.0_f64);
+        sumsum += rayout.pvector.y * rayout.pvector.y;
+    }
+    return (sumsum / rayct as f64).sqrt();
+}
+
